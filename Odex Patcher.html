@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Odex Patcher</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 800px;
+        }
+
+        h1 {
+            color: #007bff;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input[type="file"] {
+            display: none; /* Hide the default file input */
+        }
+
+        .file-upload-wrapper {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .file-upload-wrapper:hover {
+            border-color: #007bff;
+        }
+
+        .file-upload-icon {
+            font-size: 2em;
+            color: #777;
+            margin-bottom: 10px;
+        }
+
+        .file-upload-text {
+            color: #777;
+        }
+
+        .selected-files-container {
+            margin-top: 15px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+
+        .selected-file {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .selected-file:last-child {
+            border-bottom: none;
+        }
+
+        .remove-file-btn {
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            font-size: 1em;
+            padding: 0;
+            margin-left: 10px;
+        }
+
+        .options-group {
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            background-color: #f9f9f9;
+        }
+
+        .options-group h3 {
+            margin-top: 0;
+            color: #555;
+            margin-bottom: 15px;
+        }
+
+        .checkbox-group {
+            margin-bottom: 10px;
+        }
+
+        input[type="checkbox"] {
+            margin-right: 8px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: #fff;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #status-area {
+            margin-top: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .progress-bar-container {
+            background-color: #e0e0e0;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            background-color: #28a745;
+            height: 20px;
+            width: 0%;
+            border-radius: 6px;
+            transition: width 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Advanced Odex Patcher</h1>
+
+        <div class="form-group">
+            <label for="file-upload">Select APK/JAR Files:</label>
+            <div class="file-upload-wrapper" onclick="document.getElementById('file-upload').click()">
+                <div class="file-upload-icon">📁</div>
+                <div class="file-upload-text">Drag & Drop files here or click to browse</div>
+            </div>
+            <input type="file" id="file-upload" multiple onchange="handleFileSelect(this.files)">
+            <div class="selected-files-container" id="selected-files">
+                </div>
+        </div>
+
+        <div class="options-group">
+            <h3>Patching Options</h3>
+            <div class="checkbox-group">
+                <input type="radio" id="deodex" name="operation" value="deodex" checked>
+                <label for="deodex">Deodex</label>
+            </div>
+            <div class="checkbox-group">
+                <input type="radio" id="odex" name="operation" value="odex">
+                <label for="odex">Odex</label>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="force" name="force" value="force">
+                <label for="force">Force Operation (if possible)</label>
+            </div>
+            </div>
+
+        <button onclick="startProcessing()">Start Patching</button>
+
+        <div class="progress-bar-container" id="progress-container" style="display: none;">
+            <div class="progress-bar" id="progress-bar">0%</div>
+        </div>
+
+        <div id="status-area">
+            </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('file-upload');
+        const selectedFilesContainer = document.getElementById('selected-files');
+        const progressBarContainer = document.getElementById('progress-container');
+        const progressBar = document.getElementById('progress-bar');
+        const statusArea = document.getElementById('status-area');
+        let filesToProcess = [];
+
+        function handleFileSelect(files) {
+            for (const file of files) {
+                if (!filesToProcess.some(f => f.name === file.name && f.size === file.size && f.type === file.type)) {
+                    filesToProcess.push(file);
+                }
+            }
+            updateSelectedFilesDisplay();
+        }
+
+        function updateSelectedFilesDisplay() {
+            selectedFilesContainer.innerHTML = '';
+            filesToProcess.forEach((file, index) => {
+                const fileDiv = document.createElement('div');
+                fileDiv.classList.add('selected-file');
+                fileDiv.innerHTML = `
+                    <span>${file.name} (${formatFileSize(file.size)})</span>
+                    <button class="remove-file-btn" onclick="removeFile(${index})">×</button>
+                `;
+                selectedFilesContainer.appendChild(fileDiv);
+            });
+        }
+
+        function removeFile(index) {
+            filesToProcess.splice(index, 1);
+            updateSelectedFilesDisplay();
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function startProcessing() {
+            if (filesToProcess.length === 0) {
+                statusArea.innerText = 'Please select files to process.';
+                return;
+            }
+
+            const operation = document.querySelector('input[name="operation"]:checked')?.value;
+            if (!operation) {
+                statusArea.innerText = 'Please select an operation (Odex or Deodex).';
+                return;
+            }
+
+            const force = document.getElementById('force').checked;
+
+            statusArea.innerText = 'Preparing to process...\n';
+            progressBarContainer.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressBar.innerText = '0%';
+
+            // Prepare FormData to send files and options to the server
+            const formData = new FormData();
+            filesToProcess.forEach(file => {
+                formData.append('files[]', file);
+            });
+            formData.append('operation', operation);
+            formData.append('force', force);
+
+            // Replace '/api/odex-patcher' with your actual backend endpoint
+            fetch('/api/odex-patcher', {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(`HTTP error! status: ${response.status}, body: ${text}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                progressBarContainer.style.display = 'none';
+                statusArea.innerText = 'Processing complete.\n';
+                if (data.status === 'success' && data.results) {
+                    data.results.forEach(result => {
+                        statusArea.innerText += `${result.filename}: ${result.message}\n`;
+                        if (result.downloadUrl) {
+                            statusArea.innerText += `  <a href="${result.downloadUrl}" target="_blank" download>Download Processed File</a>\n`;
+                        }
+                    });
+                } else if (data.error) {
+                    statusArea.innerText += `Error: ${data.error}\n`;
+                }
+            })
+            .catch(error => {
+                progressBarContainer.style.display = 'none';
+                statusArea.innerText = `Processing failed: ${error.message}\n`;
+            });
+        }
+    </script>
+</body>
+</html>
